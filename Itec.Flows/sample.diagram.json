@@ -1,0 +1,20 @@
+﻿[
+  {
+    "Name": "abc",
+    "Title": "",
+    "Description": "",
+    "ActivityType": "Activity",
+    "Code": "",
+    "Inputs": {
+      "var1": "a",
+      "var2": "b"
+    },
+    "Nexts": [
+      {
+        "StateKey": "a",
+        "StateValue": "b",
+        "ActivityName": ""
+      }
+    ]
+  }
+]
