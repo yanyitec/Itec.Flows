@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Itec.Flows
 {
-    public interface IActivityStateDao
+    public interface IActivityStatePersistent
     {
         /// <summary>
         /// 根据Id获取工作流活动状态

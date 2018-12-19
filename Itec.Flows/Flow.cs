@@ -6,7 +6,7 @@ namespace Itec.Flows
 {
     public class Flow : IFlow
     {
-        public IActivityStateDao Dao { get; private set; }
+        public IActivityStatePersistent Dao { get; private set; }
         public IActivityState CreateFlow(string flowId, IReadOnlyDictionary<string, string> inputs)
         {
             throw new NotImplementedException();

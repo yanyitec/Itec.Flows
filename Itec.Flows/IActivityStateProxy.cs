@@ -13,10 +13,10 @@ namespace Itec.Flows
         /// <param name="defination"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        void AddRoute(ActivityDefination defination,string key=null, string value=null );
+        void AddRoute(Defination defination,string key=null, string value=null );
 
-        void InsertNext(ActivityDefination defination);
-        void AppendNext(ActivityDefination defination);
+        void InsertNext(Defination defination);
+        void AppendNext(Defination defination);
 
         void Deal();
 

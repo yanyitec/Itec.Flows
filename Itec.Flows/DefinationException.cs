@@ -6,7 +6,7 @@ namespace Itec.Flows
 {
     public class DefinationException:Exception
     {
-        public DefinationException(string message,string path,string flowId,ActivityDefination def) : base(message) {
+        public DefinationException(string message,string path,string flowId,Defination def) : base(message) {
             this.NodePath = path;
             this.FlowId = flowId;
             this.Defination = def;
@@ -15,7 +15,7 @@ namespace Itec.Flows
 
         public string FlowId { get; private set; }
 
-        public ActivityDefination Defination { get; private set; }
+        public Defination Defination { get; private set; }
 
     }
 }

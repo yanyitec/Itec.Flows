@@ -10,6 +10,18 @@ namespace Itec.Flows
         /// Id
         /// </summary>
         public Guid Id { get; set; }
+        
+        /// <summary>
+        /// 工作流名称
+        /// </summary>
+        public string FlowId { get; set; }
+
+        public Guid ParentId { get; set; }
+
+        public Guid RootId { get; set; }
+
+        public Guid PreviousId { get; set; }
+
         /// <summary>
         /// 活动名
         /// </summary>
@@ -40,11 +52,13 @@ namespace Itec.Flows
         /// <summary>
         /// 执行中间状态
         /// </summary>
-        public string Datas { get; set; }
+        public string Locals { get; set; }
         /// <summary>
         /// 输出
         /// </summary>
         public string Outputs { get; set; }
+
+        public string Route { get; set; }
 
         public DateTime ExecuteTime { get; set; }
 
@@ -54,9 +68,11 @@ namespace Itec.Flows
 
         public DateTime CreateTime { get; set; }
 
-        public string CreatorId { get; set; }
-        public string CreatorName { get; set; }
+        public DateTime UpdateTime { get; set; }
 
-        public string CreatorInfo { get; set; }
+        public string DealerId { get; set; }
+        public string DealerName { get; set; }
+
+        public string DealerInfo { get; set; }
     }
 }

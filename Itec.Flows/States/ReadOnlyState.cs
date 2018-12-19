@@ -1,0 +1,190 @@
+﻿using Newtonsoft.Json.Linq;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Dynamic;
+using System.Linq;
+using System.Text;
+
+namespace Itec.Flows
+{
+    public class ReadOnlyState : System.Dynamic.DynamicObject, IReadOnlyState
+    {
+        Func<JObject> _DataFactory;
+        public ReadOnlyState(Func<JObject> dataFactory) {
+            this._DataFactory = dataFactory;
+        }
+        public ReadOnlyState(JObject data = null)
+        {
+            this._DataFactory = () => data ?? new JObject();
+        }
+
+        public ReadOnlyState(string json)
+        {
+            this._DataFactory = () => json == null ? new JObject() : JObject.Parse(json);
+        }
+
+        protected Func<JObject> DateFactory { get { return _DataFactory; } set { _DataFactory = value; } }
+
+        /// <summary>
+        /// 状态是否有变更
+        /// </summary>
+        public bool HasChanges { get; protected internal set; }
+
+
+        JObject _Internals;
+        protected internal JObject Internals
+        {
+            get {
+                if (_Internals == null) {
+                    _Internals = this._DataFactory();
+                }
+                return _Internals;
+            }
+            set
+            {
+                _Internals = JObject.FromObject(value);
+                if (_Internals == null) _Internals = new JObject();
+                HasChanges = true;
+            }
+        }
+
+
+
+        public string this[string key] {
+            get { return this.GetString(key); }
+        }
+
+
+
+        public string GetString(string key)
+        {
+            var token = Internals[key];
+            if (token == null || token.Type == JTokenType.Undefined || token.Type == JTokenType.Null) return null;
+            return token.ToString();
+        }
+
+
+
+
+
+
+
+
+
+        public T Get<T>(string key)
+        {
+            var token = Internals[key];
+            if (token == null || token.Type == JTokenType.Undefined || token.Type == JTokenType.Null) return default(T);
+            return token.ToObject<T>();
+        }
+
+
+        public object Get(string key, Type type)
+        {
+            var token = Internals[key];
+            if (token == null || token.Type == JTokenType.Undefined || token.Type == JTokenType.Null) return null;
+
+            return token.ToObject(type);
+        }
+
+        public string ToJSON()
+        {
+            return this.Internals.ToString();
+        }
+
+        public static implicit  operator JObject(ReadOnlyState me){
+            return me._Internals;
+        }
+
+        #region dynamic
+        public override IEnumerable<string> GetDynamicMemberNames()
+        {
+            var names = new List<string>();
+            foreach (var pair in this._Internals) names.Add(pair.Key);
+            return names;
+        }
+
+        public override bool TryGetMember(GetMemberBinder binder, out object result)
+        {
+            result = this.Get(binder.Name, binder.ReturnType);
+            return true;
+        }
+
+        public override bool TrySetMember(SetMemberBinder binder, object value)
+        {
+            return false;
+        }
+
+        public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result)
+        {
+            var key = indexes[0];
+
+            result = this.Get(key == null ? null : key.ToString(), binder.ReturnType);
+            return true;
+        }
+
+        public override bool TrySetIndex(SetIndexBinder binder, object[] indexes, object value)
+        {
+            return false;
+        }
+
+        public override bool TryConvert(ConvertBinder binder, out object result)
+        {
+            result = _Internals.ToObject(binder.ReturnType);
+            return true;
+        }
+
+        public override bool TryInvoke(InvokeBinder binder, object[] args, out object result)
+        {
+            throw new InvalidOperationException("不能当作函数使用");
+        }
+
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+        {
+            throw new InvalidOperationException("成员不能当作函数使用，成员不能被调用");
+        }
+
+
+        #region enumeratable
+        public class Enumerator:IEnumerator<KeyValuePair<string, object>> {
+            public Enumerator(ReadOnlyState state) {
+                this.InnerEnumerator = state._Internals?.GetEnumerator();
+            }
+
+            public IEnumerator<KeyValuePair<string, JToken>> InnerEnumerator { get; private set; }
+
+            public KeyValuePair<string, object> Current => new KeyValuePair<string,object>(this.InnerEnumerator.Current.Key,this.InnerEnumerator.Current.Value);
+
+            object IEnumerator.Current => this.InnerEnumerator.Current;
+
+            public void Dispose()
+            {
+                this.InnerEnumerator?.Dispose();
+            }
+
+            public bool MoveNext()
+            {
+                return this.InnerEnumerator==null?false:this.InnerEnumerator.MoveNext();
+            }
+
+            public void Reset()
+            {
+                this.InnerEnumerator?.Reset();
+            }
+        }
+
+        public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+        #endregion
+        #endregion
+
+    }
+}

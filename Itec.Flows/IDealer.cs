@@ -8,5 +8,6 @@ namespace Itec.Flows
     {
         string Id { get; }
         string Name { get; }
+        string ToJSON();
     }
 }
