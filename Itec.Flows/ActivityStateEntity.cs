@@ -36,7 +36,7 @@ namespace Itec.Flows
         /// 定义
         /// </summary>
 
-        public string Defination { get; set; }
+        public string Config { get; set; }
         
 
         /// <summary>
@@ -52,11 +52,15 @@ namespace Itec.Flows
         /// <summary>
         /// 执行中间状态
         /// </summary>
-        public string Locals { get; set; }
+        public string Variables { get; set; }
         /// <summary>
         /// 输出
         /// </summary>
         public string Outputs { get; set; }
+        /// <summary>
+        /// 出口数据
+        /// </summary>
+        public string Exports { get; set; }
 
         public string Route { get; set; }
 
@@ -70,7 +74,7 @@ namespace Itec.Flows
 
         public DateTime UpdateTime { get; set; }
 
-        public string DealerId { get; set; }
+        public Guid DealerId { get; set; }
         public string DealerName { get; set; }
 
         public string DealerInfo { get; set; }

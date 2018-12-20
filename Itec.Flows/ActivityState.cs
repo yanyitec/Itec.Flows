@@ -9,26 +9,27 @@ namespace Itec.Flows
 {
     public class ActivityState :CascadeReadOnlyState
     {
+        public static readonly object Nothing = new object();
         //public readonly static IReadOnlyDictionary<string, string> NoResults = new Dictionary<string, string>();
-        public ActivityState(ActivityState parent,ActivityStateEntity entity):base(()=> entity.Locals==null?null:JObject.Parse(entity.Locals),parent) {
+        public ActivityState(ActivityState parent,ActivityStateEntity entity):base(entity.Variables==null?new JObject():JObject.Parse(entity.Variables),parent) {
             this.Entity = entity;
             this.Parent = parent;
             this.Root = parent == null ? this : parent.Root;
         }
 
-        public ActivityState(string flowId, Defination defination, JObject input,IDealer dealer=null)
-            :this(null,flowId,defination,input, Guid.Empty ,dealer)
+        public ActivityState(string flowId, Config Config, JObject input,IDealer dealer=null)
+            :this(null,flowId,Config,input, Guid.Empty ,dealer)
         {
             
         }
 
-        public ActivityState(ActivityState parent, Defination defination, JObject input,Guid previousId, IDealer dealer=null)
-            : this(parent, null, defination, input,previousId,dealer)
+        public ActivityState(ActivityState parent, Config Config, JObject input,Guid previousId, IDealer dealer=null)
+            : this(parent, null, Config, input,previousId,dealer)
         {
 
         }
 
-        ActivityState(ActivityState parent,string flowId, Defination defination,JObject input,Guid previousId,IDealer dealer=null)
+        ActivityState(ActivityState parent,string flowId, Config Config,JObject input,Guid previousId,IDealer dealer=null)
             : base(parent)
         {
             this.Entity = new ActivityStateEntity();
@@ -50,12 +51,7 @@ namespace Itec.Flows
             }
             this._Inputs = new ReadOnlyState(input);
             this.Entity.Inputs = this._Inputs.ToJSON();
-            if (parent != null) {
-                this.Internals = (parent.Internals.DeepClone() as JObject) ?? new JObject();
-            } else {
-                this.Internals = new JObject();
-            }
-            
+                        
 
             this.Dealer = dealer ?? MakeDealer();
             if (this.Dealer != null) {
@@ -111,9 +107,9 @@ namespace Itec.Flows
 
         
 
-        public Defination Defination { get; set; }
+        public Config Config { get; set; }
 
-        bool _DefinationChanged;
+        bool _ConfigChanged;
 
         
         ReadOnlyState _Inputs;
@@ -132,38 +128,70 @@ namespace Itec.Flows
             }
         }
 
-        State _Locals;
+        State _Variables;
         /// <summary>
         /// 状态数据，在Deal过程中会使用
         /// </summary>
-        public IState Locals
+        public IState Variables
         {
             get
             {
-                if (_Locals == null)
+                if (_Variables == null)
                 {
-                    _Locals = new State(this.Entity.Locals);
+                    _Variables = new State(this.Entity.Variables);
                 }
-                return _Locals;
+                return _Variables;
             }
         }
 
 
 
-        State _Outputs;
+        ReadOnlyState _Outputs;
         /// <summary>
         /// 状态数据，在Deal过程中会使用
         /// </summary>
-        public IState Outputs
+        public IReadOnlyState Outputs
         {
             get
             {
                 if (_Outputs == null)
                 {
-                    _Outputs = new State(this.Entity.Outputs);
+                    _Outputs = new ReadOnlyState(JObject.Parse(this.Entity.Outputs));
                 }
                 return _Outputs;
             }
+        }
+        bool _ExportsChanged;
+        List<string> _Exports;
+        /// <summary>
+        /// 状态数据，在Deal过程中会使用
+        /// </summary>
+        public IList<string> Exports
+        {
+            get
+            {
+                if (_Exports == null)
+                {
+                    _Exports = JsonConvert.DeserializeObject<List<string>>(this.Entity.Exports);
+                }
+                return _Exports;
+            }
+        }
+
+        public void Export(params string[] names) {
+            
+            foreach (var n in names) {
+                if (!this.Exports.Contains(n)) {
+                    this.Exports.Add(n);
+                    this._ExportsChanged = true;
+                }
+            }
+            
+        }
+
+        public void ExportValue(string key, object value) {
+            this.Variables.Set(key,value);
+            this.Export(key);
         }
 
         public string Route {
@@ -196,13 +224,14 @@ namespace Itec.Flows
 
         ActivityStateEntity CheckChanges() {
             var entity = new ActivityStateEntity() {
-                Id = this.Entity.Id
+                Id = this.Entity.Id,
+                Route =this.Route
             };
             var hasChanges = false;
-            if (this.HasChanges)
+            if (this._Variables!=null && this._Variables.HasChanges)
             {
-                entity.Locals = this.Internals.ToString();
-                this.HasChanges = false;
+                entity.Variables = this._Variables.ToJSON();
+                this._Variables.HasChanges = false;
                 hasChanges = true;
             }
             
@@ -211,6 +240,39 @@ namespace Itec.Flows
                 entity.Outputs = this._Outputs.ToString();
                 this._Outputs.HasChanges = false;
                 hasChanges = true;
+            }
+
+            if (this._ExportsChanged)
+            {
+                if (this._Exports != null)
+                {
+                    entity.Exports = this._Exports.ToString();
+                }
+                else entity.Exports = "[]";
+                
+                this._ExportsChanged = false;
+                hasChanges = true;
+            }
+
+            if (_DealerChanged) {
+                if (this._Dealer == null)
+                {
+                    entity.DealerId = Guid.Empty;
+                    entity.DealerName = entity.DealerInfo = string.Empty;
+                }
+                else {
+                    entity.DealerId = this._Dealer.Id;
+                    entity.DealerName = this._Dealer.Name;
+                    entity.DealerInfo = this._Dealer.ToJSON();
+
+                }
+            }
+
+            if (this._ConfigChanged) {
+                if (this.Config == null) entity.Config = string.Empty;
+                else {
+                    entity.Config = JsonConvert.SerializeObject(this.Config);
+                }
             }
             return hasChanges?entity:null;
         }
@@ -246,7 +308,7 @@ namespace Itec.Flows
 
         
         public ExecuteStages Deal(Queue<ActivityState> todos, IDealer dealer, object context=null) {
-            if (!this.Activity.CheckStart(this.Inputs,new ReadOnlyState(this.Defination.Parameters),this, dealer, context)) return ExecuteStages.Denied;
+            if (!this.Activity.CheckStart(this.Inputs,new ReadOnlyState(this.Config.Parameters),this, dealer, context)) return ExecuteStages.Denied;
             if (this.ExecuteStage == ExecuteStages.Creating) {
 
                 this.ExecuteStage = this.InsertActivity(dealer,context);
@@ -258,6 +320,7 @@ namespace Itec.Flows
             if (this.ExecuteStage == ExecuteStages.Executing || this.ExecuteStage== ExecuteStages.Created) {
                 
                 this.ExecuteStage = this.ExecuteActivity(dealer,null,context);
+                this.SaveChanges();
             }
 
             if (this.ExecuteStage == ExecuteStages.Executed) {
@@ -270,6 +333,7 @@ namespace Itec.Flows
                     this.ExecuteStage = RouteNexts(todos);
                 else
                     this.ExecuteStage = ExecuteStages.Finished;
+                
             }
             this.SaveChanges();
             return this.ExecuteStage;
@@ -280,7 +344,7 @@ namespace Itec.Flows
 
 
 
-            var pars = this.Defination.Parameters;
+            var pars = this.Config.Parameters;
             //合并pars到当前私有变量
             if (pars != null)
             {
@@ -295,13 +359,14 @@ namespace Itec.Flows
             {
                 internals[pair.Key] = pair.Value;
             }
-            if (this._Locals != null)
+            if (this._Variables != null)
             {
-                this.Internals = internals;
+                this._Variables.Internals = internals;
             }
             else {
-                this._Locals = new State(internals);
+                this._Variables = new State(internals);
             }
+            this._Variables.HasChanges = true;
             //this.Entity.Locals = this.ToJSON();
         }
 
@@ -316,6 +381,8 @@ namespace Itec.Flows
         {
             var entity = this.Entity;
             entity.ExecuteStage = (int)ExecuteStages.Created;
+            entity.Inputs = this.Inputs.ToJSON();
+            //entity.Variables = this.Variables.ToJSON();
             
             this.Persistent.CreateActivityState(entity);
             return ExecuteStages.Created;
@@ -329,17 +396,44 @@ namespace Itec.Flows
         /// <param name="context"></param>
         /// <returns></returns>
         ExecuteStages ExecuteActivity(IDealer dealer, IState state, object context) {
-            var isDone = this.Activity.Execute(state,dealer, context);
-            if (!isDone) return ExecuteStages.Executing;
+            var outputs = this.Activity.Execute(state,dealer, context);
+            if (outputs==null) return ExecuteStages.Executing;
+            if (outputs != Nothing) {
+                var t = outputs.GetType();
+                if (t.IsClass && t != typeof(string))
+                {
+                    var rs = JObject.FromObject(outputs);
+                    (this.Outputs as State).Internals = rs;
+                }
+                else {
+                    var rs = JToken.FromObject(outputs);
+                    var jrs = new JObject();
+                    jrs.Add("Returns",rs);
+                    (this.Outputs as State).Internals = jrs;
+                }
+            }
 
-            if (this.Defination != null && this.Parent!=null) {
-                var exports = this.Defination.Exports;
+            if (this.Parent == null) return ExecuteStages.End;
+            if (this.Config != null) {
+                var exports = this.Config.Exports;
                 if (exports != null) {
-                    var parentDatas = this.Parent.Internals;
-                    var localDatas = this.Internals;
+                    var pstates = (this.Parent.Variables as State);
+                    var parentVariableDatas = pstates.Internals;
+                    var selfVariableDatas = (this.Variables as State).Internals;
                     foreach (var key in exports) {
-                        parentDatas[key] = localDatas[key];
+                        parentVariableDatas[key] = selfVariableDatas[key].DeepClone();
+                        pstates.HasChanges = true;
                     }
+                }
+            }
+            if (_Exports != null) {
+                var pstates = (this.Parent.Variables as State);
+                var parentVariableDatas = pstates.Internals;
+                var selfVariableDatas = (this.Variables as State).Internals;
+                foreach (var key in this._Exports)
+                {
+                    parentVariableDatas[key] = selfVariableDatas[key].DeepClone();
+                    pstates.HasChanges = true;
                 }
             }
 
@@ -354,11 +448,11 @@ namespace Itec.Flows
         ExecuteStages RouteNexts(Queue<ActivityState> todos)
         {
             
-            var nexts = this.Defination.Nexts;
+            var nexts = this.Config.Nexts;
             if (nexts == null) return this.Parent==null?ExecuteStages.End: ExecuteStages.Routing; 
             if ( nexts.Type == JTokenType.Null || nexts.Type == JTokenType.Undefined) return ExecuteStages.End;
 
-            if (this.Parent == null) throw new DefinationException("根活动不能定义Nexts",null,this.FlowId,this.Defination);
+            if (this.Parent == null) throw new ConfigException("根活动不能定义Nexts",null,this.FlowId,this.Config);
             //string nextActivityName = null;
             if (nexts.Type == JTokenType.String)
             {
@@ -453,8 +547,8 @@ namespace Itec.Flows
         }
         bool AddTodos(Queue<ActivityState> todos,string activityName) {
             
-            if (this.Parent.Defination.Activities == null) throw new DefinationException("Route之前必须配置Defination",this.Parent.Path,this.Parent.FlowId,this.Parent.Defination);
-            var nextDef = this.Defination.Activities.FirstOrDefault(a => a.Name == activityName);
+            if (this.Parent.Config.Activities == null) throw new ConfigException("Route之前必须配置Config",this.Parent.Path,this.Parent.FlowId,this.Parent.Config);
+            var nextDef = this.Config.Activities.FirstOrDefault(a => a.Name == activityName);
             if(nextDef==null) return false;
             todos.Enqueue(new ActivityState(this.Parent,nextDef,this._Outputs,this.Id,null));
             return true;

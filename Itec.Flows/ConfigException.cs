@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Itec.Flows
 {
-    public class DefinationException:Exception
+    public class ConfigException:Exception
     {
-        public DefinationException(string message,string path,string flowId,Defination def) : base(message) {
+        public ConfigException(string message,string path,string flowId,Config def) : base(message) {
             this.NodePath = path;
             this.FlowId = flowId;
             this.Defination = def;
@@ -15,7 +15,7 @@ namespace Itec.Flows
 
         public string FlowId { get; private set; }
 
-        public Defination Defination { get; private set; }
+        public Config Defination { get; private set; }
 
     }
 }

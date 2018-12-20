@@ -12,7 +12,7 @@ namespace Itec.Flows
         /// <param name="flowId"></param>
         /// <param name="inputs"></param>
         /// <returns></returns>
-        IActivityStateProxy CreateFlow(string flowId, IReadOnlyDictionary<string, string> inputs);
+        IActivityStateProxy CreateFlow(string flowId, object inputs,IDealer currentUser);
 
 
         IActivityStateProxy GetAndLockActivityState(Guid activityId, IDealer user,int retryCount=0);

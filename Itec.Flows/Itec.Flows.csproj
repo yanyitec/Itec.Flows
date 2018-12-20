@@ -13,4 +13,8 @@
     <ProjectReference Include="..\..\Itec.Logs\Itec.Logs\Itec.Logs.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Activities\" />
+  </ItemGroup>
+
 </Project>

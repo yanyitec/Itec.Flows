@@ -10,22 +10,18 @@ namespace Itec.Flows
 {
     public class ReadOnlyState : System.Dynamic.DynamicObject, IReadOnlyState
     {
-        Func<JObject> _DataFactory;
-        public ReadOnlyState(Func<JObject> dataFactory) {
-            this._DataFactory = dataFactory;
-        }
+        
         public ReadOnlyState(JObject data = null)
         {
-            this._DataFactory = () => data ?? new JObject();
+            this._Internals = data;
         }
 
         public ReadOnlyState(string json)
         {
-            this._DataFactory = () => json == null ? new JObject() : JObject.Parse(json);
+            this._Internals = json == null ? new JObject() : JObject.Parse(json);
         }
 
-        protected Func<JObject> DateFactory { get { return _DataFactory; } set { _DataFactory = value; } }
-
+        
         /// <summary>
         /// 状态是否有变更
         /// </summary>
@@ -36,14 +32,12 @@ namespace Itec.Flows
         protected internal JObject Internals
         {
             get {
-                if (_Internals == null) {
-                    _Internals = this._DataFactory();
-                }
-                return _Internals;
+                
+                return _Internals==null?(_Internals = new JObject()):_Internals;
             }
             set
             {
-                _Internals = JObject.FromObject(value);
+                _Internals = value;
                 if (_Internals == null) _Internals = new JObject();
                 HasChanges = true;
             }

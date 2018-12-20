@@ -9,9 +9,7 @@ namespace Itec.Flows
 {
     public class State :   ReadOnlyState, IState
     {
-        public State(Func<JObject> dataFactory):base(dataFactory)
-        {
-        }
+        
         public State(JObject data = null):base(data)
         {
         }

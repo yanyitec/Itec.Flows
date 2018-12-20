@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Itec.Flows
 {
-    public class Defination
+    public class Config
     {
         
         public string Name { get; set; }
@@ -24,7 +24,7 @@ namespace Itec.Flows
 
         public JToken Nexts { get; set; }
 
-        public List<Defination> Activities { get; set; }
+        public List<Config> Activities { get; set; }
 
     }
 }

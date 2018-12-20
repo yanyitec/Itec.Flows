@@ -7,12 +7,12 @@ namespace Itec.Flows
     public class Flow : IFlow
     {
         public IActivityStatePersistent Dao { get; private set; }
-        public IActivityState CreateFlow(string flowId, IReadOnlyDictionary<string, string> inputs)
+        public IActivityStateProxy CreateFlow(string flowId, object inputs,IDealer currentUser)
         {
             throw new NotImplementedException();
         }
 
-        public IActivityState GetAndLockActivityState(Guid id, IDealer user)
+        public IActivityStateProxy GetAndLockActivityState(Guid activityId, IDealer user, int retryCount = 0)
         {
             var sql = @"SELECT * FROM ActivityStates 
 WHERE RootId IN (SELECT Id FROM ActivityStates WHERE Id=@id)

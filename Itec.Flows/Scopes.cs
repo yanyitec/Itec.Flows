@@ -10,7 +10,7 @@ namespace Itec.Flows
         /// <summary>
         /// 内部变量,默认
         /// </summary>
-        Locals=1,
+        Variables=1,
         /// <summary>
         /// 外部的Inputs
         /// </summary>

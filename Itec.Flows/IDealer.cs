@@ -6,7 +6,7 @@ namespace Itec.Flows
 {
     public interface IDealer
     {
-        string Id { get; }
+        Guid Id { get; }
         string Name { get; }
         string ToJSON();
     }

@@ -12,10 +12,7 @@ namespace Itec.Flows
         {
             this.Super = super;
         }
-        public CascadeReadOnlyState(Func<JObject> dataFactory, CascadeReadOnlyState super) : base(dataFactory)
-        {
-            this.Super = super;
-        }
+        
         public CascadeReadOnlyState(JObject data = null, CascadeReadOnlyState super=null) : base(data)
         {
             this.Super = super;

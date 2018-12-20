@@ -7,23 +7,23 @@ namespace Itec.Flows
     public class VariableAttribute
     {
         public VariableAttribute() {
-            this.Kind = Scopes.Internal;
+            this.Scope = Scopes.Variables;
         }
-        public VariableAttribute(string name,Scopes kind = Scopes.Internal) {
-            this.Kind = kind;
+        public VariableAttribute(string name,Scopes scope = Scopes.Variables) {
+            this.Scope = scope;
             this.Name = name;
         }
 
-        public VariableAttribute(Scopes kind,string name = null) {
-            this.Kind = kind;
+        public VariableAttribute(Scopes scope,string name = null) {
+            this.Scope = scope;
             this.Name = name;
         }
 
         
-        public Scopes Kind { get; private set; }
+        public Scopes Scope { get; private set; }
 
         public bool Is(Scopes ck) {
-            return ck == this.Kind || (((int)ck & (int)this.Kind)>0);
+            return ck == this.Scope || (((int)ck & (int)this.Scope) >0);
         }
 
         public string Name { get; private set; }
